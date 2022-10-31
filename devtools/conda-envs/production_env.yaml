@@ -1,0 +1,11 @@
+channels:
+- uibcdf
+- conda-forge
+- defaults
+dependencies:
+- python
+- setuptools
+- numpy
+- matplotlib
+- tqdm
+- scikit-learn

@@ -1,0 +1,15 @@
+channels:
+- uibcdf
+- conda-forge
+- defaults
+dependencies:
+- python
+- setuptools
+- numpy
+- matplotlib
+- tqdm
+- scikit-learn
+- sphinx
+- sphinx_rtd_theme
+- sphinxcontrib-bibtex
+- myst-nb
