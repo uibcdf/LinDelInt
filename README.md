@@ -1,5 +1,5 @@
-# OpenInterpolator
-
+# LinDelInt
+Linear Delaunay Interpolator of scalar and vectorial fields (off-grid).
 
 ## License
 
