@@ -45,6 +45,8 @@ development:
     - *test_dependencies
     - *docs_dependencies
     - jupyterlab
+    - mamba
+    - ipympl
 
 conda-build:
   channels:
