@@ -18,6 +18,8 @@ class Interpolator():
         self._convex_hull_simplices = {}
         self._convex_hull_faces = []
         self._convex_hull_edges = []
+        self._convex_hull_points = []
+        self._faces_with_edge = {}
 
         if self.dim_points==2:
             if self.n_points==3:
@@ -51,6 +53,9 @@ class Interpolator():
             for ii, edges in self._convex_hull_simplices.items():
                 for edge in edges:
                     self._convex_hull_edges.append(edge.tolist())
+                    for jj in edge:
+                        if jj not in self._convex_hull_points:
+                            self._convex_hull_points.append(jj)
 
         if self.dim_points==3:
             for ii, faces in self._convex_hull_simplices.items():
@@ -61,11 +66,20 @@ class Interpolator():
                     edge2=np.sort([face[1], face[2]]).tolist()
                     if edge0 not in self._convex_hull_edges:
                         self._convex_hull_edges.append(edge0)
+                        self._faces_with_edge[tuple(edge0)]=[]
                     if edge1 not in self._convex_hull_edges:
                         self._convex_hull_edges.append(edge1)
+                        self._faces_with_edge[tuple(edge1)]=[]
                     if edge2 not in self._convex_hull_edges:
                         self._convex_hull_edges.append(edge2)
-
+                        self._faces_with_edge[tuple(edge2)]=[]
+                    self._faces_with_edge[tuple(edge0)].append(face)
+                    self._faces_with_edge[tuple(edge1)].append(face)
+                    self._faces_with_edge[tuple(edge2)].append(face)
+            for edge in self._convex_hull_edges:
+                for jj in edge:
+                    if jj not in self._convex_hull_points:
+                        self._convex_hull_points.append(jj)
 
     def do_your_thing(self, points):
 
@@ -93,6 +107,7 @@ class Interpolator():
 
         del(simplex_of_point)
 
+        va=[]
 
         for simplex_index in range(self.delaunay.nsimplex):
 
@@ -113,7 +128,7 @@ class Interpolator():
 
         print(len(remain))
 
-        afuera=[[] for ii in range(n_points)]
+        afuera={tuple(face):[] for face in self._convex_hull_faces}
 
         for simplex_index, faces in self._convex_hull_simplices.items():
 
@@ -160,7 +175,6 @@ class Interpolator():
 
                     if (bcoords[not_in_face]<=0):
 
-                        afuera[point_index].append(face)
 
                         point0 = point-p0
                         point_in_b = [np.dot(point0, b01), np.dot(point0, b02)]
@@ -168,96 +182,78 @@ class Interpolator():
                         bbcoords = np.dot(YY, np.array(point_in_b)-aux_vertices[-1])
                         bbcoords.resize(3)
                         bbcoords[-1] = 1-bbcoords.sum()
+                        
+                        flag = True
 
-                        if (1.0>=bcoords[0]>=0.0):
-                            if (1.0>=bcoords[1]>=0.0):
-                                if (1.0>=bcoords[2]>=0.0):
-                                    properties[point_index]= bcoords[0]*self.properties[face[0]]+\
-                                                             bcoords[1]*self.properties[face[1]]+\
-                                                             bcoords[2]*self.properties[face[2]]
-                                else:
-                                    aux_list.append(point_index)
-                            else:
-                                aux_list.append(point_index)
-                        else:
+                        if (1.0>=bbcoords[0]>=0.0):
+                            if (1.0>=bbcoords[1]>=0.0):
+                                if (1.0>=bbcoords[2]>=0.0):
+                                    properties[point_index]= bbcoords[0]*self.properties[face[0]]+\
+                                                             bbcoords[1]*self.properties[face[1]]+\
+                                                             bbcoords[2]*self.properties[face[2]]
+                                    flag = False
+
+                        if flag:
                             aux_list.append(point_index)
+                            afuera[tuple(face)].append(point_index)
 
                     else:
+
                         aux_list.append(point_index)
 
                 remain=aux_list
 
         print(len(remain))
 
-        aux_list = []
 
+        kdtree = KDTree(points[self._convex_hull_points])
+        neighbors_convex_hull_point = {ii:[] for ii in self._convex_hull_points}
+        neighbors={}
         for point_index in remain:
+            _, ii = kdtree.query(points[point_index])
+            jj = self._convex_hull_points[ii]
+            neighbors_convex_hull_point[jj].append(point_index)
+            neighbors[point_index]=jj
 
-            edges = []
+        for edge in self._convex_hull_edges:
 
-            for face in afuera[point_index]:
+            aux_neighbors=neighbors_convex_hull_point[edge[0]]+neighbors_convex_hull_point[edge[1]]
+            aux_afuera=[]
+            for face in self._faces_with_edge[tuple(edge)]:
+                aux_afuera+=afuera[tuple(face)]
+            aux_afuera = np.unique(aux_afuera)
 
-                edge0=np.sort([face[0], face[1]]).tolist()
-                edge1=np.sort([face[0], face[2]]).tolist()
-                edge2=np.sort([face[1], face[2]]).tolist()
-                if edge0 not in edges:
-                    edges.append(edge0)
-                if edge1 not in edges:
-                    edges.append(edge1)
-                if edge2 not in edges:
-                    edges.append(edge2)
+            aux_list = np.intersect1d(aux_neighbors, aux_afuera)
+            aux_list = np.intersect1d(aux_list, remain)
 
+            p0 = self.delaunay.points[edge[0]]
+            p1 = self.delaunay.points[edge[1]]
 
-            point = points[point_index]
+            v01 = p1-p0
+            d01 = np.linalg.norm(v01)
+            u01 = (p1-p0)/d01
 
-            edge0=None
-            edge1=None
-            ff=None
-            threshold=np.inf
+            for point_index in aux_list:
 
-            print('>>>', point_index)
-            for edge in edges:
-
-                p0 = self.delaunay.points[edge[0]]
-                p1 = self.delaunay.points[edge[1]]
-
-                v01 = p1-p0
-                d01 = np.linalg.norm(v01)
-                u01 = (p1-p0)/d01
+                point = points[point_index]
 
                 f = np.dot(point-p0, u01)/d01
 
                 if f>=0.0 and f<=1.0:
 
-                    far = np.linalg.norm((point-p0)-f*u01)
-                    print(far)
-                    if far<threshold:
+                    properties[point_index]= (1.0-f)*self.properties[edge[0]]+f*self.properties[edge[1]]
+                    remain.remove(point_index)
 
-                        threshold=far
-                        edge0=edge[0]
-                        edge1=edge[1]
-                        ff = f 
-
-
-            if ff is not None:
-                
-                properties[point_index]= (1.0-ff)*self.properties[edge0]+ff*self.properties[edge1]
-
-            else:
-
-                aux_list.append(point_index)
-
-        remain=aux_list
 
         print(len(remain))
 
         for point_index in remain:
 
-            _, neighbor = self._kdtree.query(points[point_index])
-            properties[point_index] = self.properties[neighbor]
+            properties[point_index] = self.properties[neighbors[point_index]]
+            va.append(point_index)
 
-        return properties
-
+        #return properties
+        return va
 
     def _do_your_thing_2D(self, points):
 
