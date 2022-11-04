@@ -205,8 +205,8 @@ class Interpolator():
 
         print(len(remain))
 
-
-        kdtree = KDTree(points[self._convex_hull_points])
+        print(self._convex_hull_points)
+        kdtree = KDTree(self.delaunay.points[self._convex_hull_points])
         neighbors_convex_hull_point = {ii:[] for ii in self._convex_hull_points}
         neighbors={}
         for point_index in remain:
@@ -215,7 +215,9 @@ class Interpolator():
             neighbors_convex_hull_point[jj].append(point_index)
             neighbors[point_index]=jj
 
-        for edge in self._convex_hull_edges:
+        
+        for edge in [self._convex_hull_edges[0]]:
+            print(edge)
 
             aux_neighbors=neighbors_convex_hull_point[edge[0]]+neighbors_convex_hull_point[edge[1]]
             aux_afuera=[]
@@ -231,7 +233,7 @@ class Interpolator():
 
             v01 = p1-p0
             d01 = np.linalg.norm(v01)
-            u01 = (p1-p0)/d01
+            u01 = v01/d01
 
             for point_index in aux_list:
 
@@ -244,13 +246,14 @@ class Interpolator():
                     properties[point_index]= (1.0-f)*self.properties[edge[0]]+f*self.properties[edge[1]]
                     remain.remove(point_index)
 
+                    va.append(point_index)
+
 
         print(len(remain))
 
         for point_index in remain:
 
             properties[point_index] = self.properties[neighbors[point_index]]
-            va.append(point_index)
 
         #return properties
         return va
