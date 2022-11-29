@@ -35,6 +35,8 @@ docs:
     - sphinx
     - sphinx_rtd_theme
     - sphinxcontrib-bibtex
+    - sphinx-remove-toctrees
+    - sphinx-copybutton
     - myst-nb
 
 development:
@@ -47,6 +49,7 @@ development:
     - jupyterlab
     - mamba
     - ipympl
+    - pyyaml
 
 conda-build:
   channels:
@@ -54,4 +57,6 @@ conda-build:
   dependencies:
     - anaconda-client
     - conda-build
+    - boa
+
 
