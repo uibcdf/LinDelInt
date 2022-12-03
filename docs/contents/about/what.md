@@ -1,3 +1,3 @@
-# What's OpenENM?
+# What's LinDelInt?
 
 To be written soon.
