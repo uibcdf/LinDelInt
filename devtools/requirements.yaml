@@ -5,16 +5,15 @@ setup:
     - defaults
   dependencies: &setup_dependencies
     - python
-    - setuptools
-    - numpy
+    - pip
+    - setuptools >=61.0
+    - versioningit ~=2.0
 
 production:
   channels: &production_channels
     - *setup_channels
   dependencies: &production_dependencies
     - *setup_dependencies
-    - matplotlib
-    - tqdm
     - scikit-learn
 
 test:
@@ -38,6 +37,8 @@ docs:
     - sphinx-remove-toctrees
     - sphinx-copybutton
     - myst-nb
+    - tqdm
+    - matplotlib
 
 development:
   channels:
