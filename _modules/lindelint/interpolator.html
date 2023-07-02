@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lindelint.interpolator &mdash; LinDelInt 0.1.0+0.g4e76661.dirty documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/copybutton.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+        <script src="../../_static/clipboard.min.js"></script>
+        <script src="../../_static/copybutton.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            LinDelInt
+          </a>
+              <div class="version">
+                0.1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contents/about/what.html">What’s LinDelInt?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contents/about/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contents/about/showcase/index.html">Showcase</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../contents/about/showcase/Quickstart_guide.html">Quickstart guide</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contents/about/citation.html">Citation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contents/user/intro/index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contents/user/interpolator/index.html">Gaussian Network Model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../contents/user/interpolator/Test_GNM.html">Test GNM</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/users/api_users.html">Users</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">LinDelInt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lindelint.interpolator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lindelint.interpolator</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">Delaunay</span><span class="p">,</span> <span class="n">KDTree</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.linalg</span> <span class="k">as</span> <span class="nn">la</span>
+
+
+<div class="viewcode-block" id="Interpolator"><a class="viewcode-back" href="../../lindelint.html#lindelint.interpolator.Interpolator">[docs]</a><span class="k">class</span> <span class="nc">Interpolator</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">properties</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">points</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_points</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="n">properties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim_properties</span> <span class="o">=</span> <span class="n">properties</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_points</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">=</span><span class="n">Delaunay</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_points</span><span class="o">&gt;=</span><span class="mi">4</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">=</span><span class="n">Delaunay</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="n">qhull_options</span><span class="o">=</span><span class="s1">&#39;QJ&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_points</span><span class="o">==</span><span class="mi">4</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">=</span><span class="n">Delaunay</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_points</span><span class="o">&gt;=</span><span class="mi">5</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">=</span><span class="n">Delaunay</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="n">qhull_options</span><span class="o">=</span><span class="s1">&#39;QJ&#39;</span><span class="p">)</span>
+
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">points</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_tetrahedrons</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron_delaunay_index</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_triangles</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle_what_tetrahedral</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle_interior_tetrahedral_vertex</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle_outer_normal</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_edges</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge_what_triangles</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">vertex</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vertex_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_vertices</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">neighbors</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">neighbors</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">in</span> <span class="n">neighbors</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">simplices</span><span class="p">[</span><span class="n">ii</span><span class="p">])</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron_delaunay_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron_delaunay_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron_delaunay_index</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_tetrahedrons</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">convex_hull</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_triangles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="k">for</span> <span class="n">triangle</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="p">:</span>
+
+                    <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]]:</span>
+                        <span class="n">edge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="n">triangle</span><span class="p">[</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">triangle</span><span class="p">[</span><span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">]]])</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">edge</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">edge</span><span class="p">)</span>
+
+                    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">tetrahedron</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">triangle</span><span class="p">,</span> <span class="n">tetrahedron</span><span class="p">,</span> <span class="n">assume_unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)):</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">triangle_what_tetrahedral</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span>
+                            <span class="n">interior_tetrahedral_vertex</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">tetrahedron</span><span class="p">,</span> <span class="n">triangle</span><span class="p">,</span> <span class="n">assume_unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">p0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">triangle</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+                            <span class="n">p1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">triangle</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+                            <span class="n">p2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">triangle</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+                            <span class="n">pint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">interior_tetrahedral_vertex</span><span class="p">]</span>
+                            <span class="n">normal</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">((</span><span class="n">p1</span><span class="o">-</span><span class="n">p0</span><span class="p">),</span> <span class="p">(</span><span class="n">p2</span><span class="o">-</span><span class="n">p0</span><span class="p">))</span>
+                            <span class="n">normal</span> <span class="o">=</span> <span class="n">normal</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">normal</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">((</span><span class="n">pint</span><span class="o">-</span><span class="n">p0</span><span class="p">),</span><span class="n">normal</span><span class="p">)</span><span class="o">&gt;</span><span class="mf">0.0</span><span class="p">:</span>
+                                <span class="n">normal</span> <span class="o">=</span> <span class="o">-</span><span class="n">normal</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">triangle_interior_tetrahedral_vertex</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">interior_tetrahedral_vertex</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">triangle_outer_normal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">normal</span><span class="p">)</span>
+                            <span class="k">break</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle_what_tetrahedral</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle_what_tetrahedral</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle_interior_tetrahedral_vertex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle_interior_tetrahedral_vertex</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle_outer_normal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle_outer_normal</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="p">:</span>
+                    <span class="n">aux</span><span class="o">=</span><span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">triangle</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">edge</span><span class="p">,</span> <span class="n">triangle</span><span class="p">)):</span>
+                            <span class="n">aux</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">aux</span><span class="p">)</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+                                <span class="k">break</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">edge_what_triangles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">aux</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">vertex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vertices_kdtree</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">vertex</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_vertices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vertex</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge_what_triangles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_what_triangles</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">tetrahedron</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">tetrahedron_dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">tetrahedron</span><span class="p">)]</span><span class="o">=</span><span class="n">index</span>
+
+                <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">triangle</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">triangle_dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">triangle</span><span class="p">)]</span><span class="o">=</span><span class="n">index</span>
+
+                <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">edge</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">edge_dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">edge</span><span class="p">)]</span><span class="o">=</span><span class="n">index</span>
+
+                <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vertex</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">edge_dict</span><span class="p">[</span><span class="n">vertex</span><span class="p">]</span><span class="o">=</span><span class="n">index</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_triangles</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle_delaunay_index</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_edges</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge_what_triangle</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge_opposite_triangle_vertex</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge_outer_normal</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">vertex</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vertex_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_vertices</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">neighbors</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">neighbors</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">in</span> <span class="n">neighbors</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">simplices</span><span class="p">[</span><span class="n">ii</span><span class="p">])</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">triangle_delaunay_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">triangle_delaunay_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle_delaunay_index</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_triangles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">convex_hull</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">triangle</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">edge</span><span class="p">,</span> <span class="n">triangle</span><span class="p">)):</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">edge_what_triangle</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span>
+                            <span class="n">opposite_triangle_vertex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">triangle</span><span class="p">,</span> <span class="n">edge</span><span class="p">,</span> <span class="n">assume_unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">edge_opposite_triangle_vertex</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">opposite_triangle_vertex</span><span class="p">)</span>
+                            <span class="n">p0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">edge</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+                            <span class="n">p1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+                            <span class="n">pint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">opposite_triangle_vertex</span><span class="p">]</span>
+                            <span class="n">p01</span> <span class="o">=</span> <span class="n">p1</span><span class="o">-</span><span class="n">p0</span>
+                            <span class="n">p01</span> <span class="o">=</span> <span class="n">p01</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p01</span><span class="p">)</span>
+                            <span class="n">normal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">p01</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="n">p01</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+                            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">((</span><span class="n">pint</span><span class="o">-</span><span class="n">p0</span><span class="p">),</span><span class="n">normal</span><span class="p">)</span><span class="o">&gt;</span><span class="mf">0.0</span><span class="p">:</span>
+                                <span class="n">normal</span> <span class="o">=</span> <span class="o">-</span><span class="n">normal</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">edge_outer_normal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">normal</span><span class="p">)</span>
+                            <span class="k">break</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge_what_triangle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_what_triangle</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge_opposite_triangle_vertex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_opposite_triangle_vertex</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">edge_outer_normal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_outer_normal</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">vertex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vertices_kdtree</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">vertex</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_vertices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vertex</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">triangle</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">triangle_dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">triangle</span><span class="p">)]</span><span class="o">=</span><span class="n">index</span>
+
+                <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">edge</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">edge_dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">edge</span><span class="p">)]</span><span class="o">=</span><span class="n">index</span>
+
+                <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vertex</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">edge_dict</span><span class="p">[</span><span class="n">vertex</span><span class="p">]</span><span class="o">=</span><span class="n">index</span>
+
+
+<div class="viewcode-block" id="Interpolator.do_your_thing"><a class="viewcode-back" href="../../lindelint.html#lindelint.interpolator.Interpolator.do_your_thing">[docs]</a>    <span class="k">def</span> <span class="nf">do_your_thing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_your_thing_2D</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_your_thing_3D</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;LinDelInt only works in a 2D or 3D space.&#39;</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_do_your_thing_3D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">):</span>
+
+        <span class="n">n_points</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">properties</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_points</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_properties</span><span class="p">])</span>
+
+        <span class="n">done</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_points</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+
+        <span class="c1">## Points inside the convex hull 3D</span>
+
+        <span class="n">simplex_of_point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">find_simplex</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        <span class="n">points_of_simplex</span> <span class="o">=</span> <span class="p">{</span><span class="n">ii</span><span class="p">:[]</span> <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">nsimplex</span><span class="p">)}</span>
+        <span class="n">points_of_simplex</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span><span class="n">jj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">simplex_of_point</span><span class="p">):</span>
+            <span class="n">points_of_simplex</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">nsimplex</span><span class="p">):</span>
+
+            <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">transform</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">transform</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="n">points_of_simplex</span><span class="p">[</span><span class="n">ii</span><span class="p">]:</span>
+                
+                <span class="n">point</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span>
+                <span class="n">Y</span> <span class="o">=</span> <span class="n">point</span> <span class="o">-</span> <span class="n">Z</span>
+                <span class="n">b</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span>
+                <span class="n">bcoords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">b</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span> <span class="o">-</span> <span class="n">b</span><span class="o">.</span><span class="n">sum</span><span class="p">()]])</span>
+
+                <span class="n">properties</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">bcoords</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">simplices</span><span class="p">[</span><span class="n">ii</span><span class="p">]])</span>
+
+                <span class="n">done</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">del</span><span class="p">(</span><span class="n">simplex_of_point</span><span class="p">,</span> <span class="n">points_of_simplex</span><span class="p">)</span>
+
+
+        <span class="c1">## Points in front of triangles 3D</span>
+
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">triangle</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="p">):</span>
+
+            <span class="n">triangle_0</span> <span class="o">=</span> <span class="n">triangle</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">triangle_1</span> <span class="o">=</span> <span class="n">triangle</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">triangle_2</span> <span class="o">=</span> <span class="n">triangle</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+            <span class="n">outer_normal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">triangle_outer_normal</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span>
+
+            <span class="n">p0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">triangle_0</span><span class="p">]</span>
+            <span class="n">p1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">triangle_1</span><span class="p">]</span>
+            <span class="n">p2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">triangle_2</span><span class="p">]</span>
+
+            <span class="n">v01</span> <span class="o">=</span> <span class="n">p1</span><span class="o">-</span><span class="n">p0</span>
+            <span class="n">d01</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v01</span><span class="p">)</span>
+            <span class="n">b01</span> <span class="o">=</span> <span class="n">v01</span><span class="o">/</span><span class="n">d01</span>
+
+            <span class="n">v02</span> <span class="o">=</span> <span class="n">p2</span><span class="o">-</span><span class="n">p0</span>
+            <span class="n">b02</span> <span class="o">=</span> <span class="n">v02</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v02</span><span class="p">,</span> <span class="n">b01</span><span class="p">)</span><span class="o">*</span><span class="n">b01</span> 
+            <span class="n">b02</span> <span class="o">=</span> <span class="n">b02</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">b02</span><span class="p">)</span>
+
+            <span class="n">v01_in_b</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v01</span><span class="p">,</span> <span class="n">b01</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">]</span>
+            <span class="n">v02_in_b</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v02</span><span class="p">,</span> <span class="n">b01</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v02</span><span class="p">,</span> <span class="n">b02</span><span class="p">)]</span>
+
+            <span class="n">aux_vertices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="n">v01_in_b</span><span class="p">,</span> <span class="n">v02_in_b</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+            <span class="n">X</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">aux_vertices</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">-</span><span class="n">aux_vertices</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">Y</span> <span class="o">=</span> <span class="n">la</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+            <span class="k">del</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_points</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">done</span><span class="p">[</span><span class="n">jj</span><span class="p">]:</span>
+                    <span class="n">point0</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">-</span><span class="n">p0</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">point0</span><span class="p">,</span> <span class="n">outer_normal</span><span class="p">)</span><span class="o">&gt;=</span><span class="mf">0.0</span><span class="p">:</span>
+
+                        <span class="n">point_in_b</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">point0</span><span class="p">,</span> <span class="n">b01</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">point0</span><span class="p">,</span> <span class="n">b02</span><span class="p">)]</span>
+
+                        <span class="n">bcoords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">point_in_b</span><span class="p">)</span><span class="o">-</span><span class="n">aux_vertices</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                        <span class="n">bcoords</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+                        <span class="n">bcoords</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="o">-</span><span class="n">bcoords</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+                        
+                        <span class="k">if</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">&gt;=</span><span class="n">bcoords</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&gt;=</span><span class="mf">0.0</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">&gt;=</span><span class="n">bcoords</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">&gt;=</span><span class="mf">0.0</span><span class="p">):</span>
+                                <span class="k">if</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">&gt;=</span><span class="n">bcoords</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">&gt;=</span><span class="mf">0.0</span><span class="p">):</span>
+                                    <span class="n">done</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">=</span><span class="kc">True</span>
+                                    <span class="n">properties</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">=</span> <span class="n">bcoords</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">triangle_0</span><span class="p">]</span><span class="o">+</span>\
+                                                    <span class="n">bcoords</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">triangle_1</span><span class="p">]</span><span class="o">+</span>\
+                                                    <span class="n">bcoords</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">triangle_2</span><span class="p">]</span>
+
+
+        <span class="c1">## Points in front of edges 3D</span>
+
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">edge</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="p">):</span>
+
+            <span class="n">edge_0</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">edge_1</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">p0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">edge_0</span><span class="p">]</span>
+            <span class="n">p1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">edge_1</span><span class="p">]</span>
+
+            <span class="n">v01</span> <span class="o">=</span> <span class="n">p1</span><span class="o">-</span><span class="n">p0</span>
+            <span class="n">d01</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v01</span><span class="p">)</span>
+            <span class="n">u01</span> <span class="o">=</span> <span class="n">v01</span><span class="o">/</span><span class="n">d01</span>
+
+            <span class="n">triangle_0</span><span class="p">,</span> <span class="n">triangle_1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_what_triangles</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span>
+
+            <span class="n">oposite_0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="p">[</span><span class="n">triangle_0</span><span class="p">],</span> <span class="n">edge</span><span class="p">,</span> <span class="n">assume_unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">outer_normal_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">triangle_outer_normal</span><span class="p">[</span><span class="n">triangle_0</span><span class="p">]</span>
+            <span class="n">outer_parallel_0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">outer_normal_0</span><span class="p">,</span> <span class="n">u01</span><span class="p">)</span>
+            <span class="n">outer_parallel_0</span> <span class="o">=</span> <span class="n">outer_parallel_0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">outer_parallel_0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">oposite_0</span><span class="p">]</span><span class="o">-</span><span class="n">p0</span><span class="p">,</span> <span class="n">outer_parallel_0</span><span class="p">)</span><span class="o">&gt;</span><span class="mf">0.0</span><span class="p">:</span>
+                <span class="n">outer_parallel_0</span> <span class="o">=</span> <span class="o">-</span><span class="n">outer_parallel_0</span>
+
+            <span class="n">oposite_1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangle</span><span class="p">[</span><span class="n">triangle_1</span><span class="p">],</span> <span class="n">edge</span><span class="p">,</span> <span class="n">assume_unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">outer_normal_1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">triangle_outer_normal</span><span class="p">[</span><span class="n">triangle_1</span><span class="p">]</span>
+            <span class="n">outer_parallel_1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">outer_normal_1</span><span class="p">,</span> <span class="n">u01</span><span class="p">)</span>
+            <span class="n">outer_parallel_1</span> <span class="o">=</span> <span class="n">outer_parallel_1</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">outer_parallel_1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">oposite_1</span><span class="p">]</span><span class="o">-</span><span class="n">p0</span><span class="p">,</span> <span class="n">outer_parallel_1</span><span class="p">)</span><span class="o">&gt;</span><span class="mf">0.0</span><span class="p">:</span>
+                <span class="n">outer_parallel_1</span> <span class="o">=</span> <span class="o">-</span><span class="n">outer_parallel_1</span>
+
+            <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_points</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">done</span><span class="p">[</span><span class="n">jj</span><span class="p">]:</span>
+                    <span class="n">point0</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">-</span><span class="n">p0</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">point0</span><span class="p">,</span> <span class="n">outer_parallel_0</span><span class="p">)</span><span class="o">&gt;=</span><span class="mf">0.0</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">point0</span><span class="p">,</span> <span class="n">outer_parallel_1</span><span class="p">)</span><span class="o">&gt;=</span><span class="mf">0.0</span><span class="p">:</span>
+                            <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">point0</span><span class="p">,</span> <span class="n">u01</span><span class="p">)</span><span class="o">/</span><span class="n">d01</span>
+                            <span class="k">if</span> <span class="n">f</span><span class="o">&gt;=</span><span class="mf">0.0</span> <span class="ow">and</span> <span class="n">f</span><span class="o">&lt;=</span><span class="mf">1.0</span><span class="p">:</span>
+                                <span class="n">done</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">=</span><span class="kc">True</span>
+                                <span class="n">properties</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">f</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">edge_0</span><span class="p">]</span><span class="o">+</span><span class="n">f</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">edge_1</span><span class="p">]</span>
+
+
+        <span class="c1">## Points in corners 3D</span>
+
+        <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_points</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">done</span><span class="p">[</span><span class="n">jj</span><span class="p">]:</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">neighbor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vertices_kdtree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="n">jj</span><span class="p">])</span>
+                <span class="n">properties</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">vertex</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]]</span>
+                <span class="n">done</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">=</span><span class="kc">True</span>
+
+
+        <span class="k">return</span> <span class="n">properties</span>
+
+
+    <span class="k">def</span> <span class="nf">_do_your_thing_2D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">):</span>
+
+
+        <span class="n">n_points</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">properties</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_points</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_properties</span><span class="p">])</span>
+
+        <span class="n">done</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_points</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+
+        <span class="c1">## Points inside the convex hull 2D</span>
+
+        <span class="n">simplex_of_point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">find_simplex</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        <span class="n">points_of_simplex</span> <span class="o">=</span> <span class="p">{</span><span class="n">ii</span><span class="p">:[]</span> <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">nsimplex</span><span class="p">)}</span>
+        <span class="n">points_of_simplex</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span><span class="n">jj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">simplex_of_point</span><span class="p">):</span>
+            <span class="n">points_of_simplex</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">nsimplex</span><span class="p">):</span>
+
+            <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">transform</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">transform</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="n">points_of_simplex</span><span class="p">[</span><span class="n">ii</span><span class="p">]:</span>
+                
+                <span class="n">point</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span>
+                <span class="n">Y</span> <span class="o">=</span> <span class="n">point</span> <span class="o">-</span> <span class="n">Z</span>
+                <span class="n">b</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span>
+                <span class="n">bcoords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">b</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span> <span class="o">-</span> <span class="n">b</span><span class="o">.</span><span class="n">sum</span><span class="p">()]])</span>
+
+                <span class="n">properties</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">bcoords</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">delaunay</span><span class="o">.</span><span class="n">simplices</span><span class="p">[</span><span class="n">ii</span><span class="p">]])</span>
+
+                <span class="n">done</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">del</span><span class="p">(</span><span class="n">simplex_of_point</span><span class="p">,</span> <span class="n">points_of_simplex</span><span class="p">)</span>
+
+
+        <span class="c1">## Points in front of edges 2D</span>
+
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">edge</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge</span><span class="p">):</span>
+
+            <span class="n">edge_0</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">edge_1</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">p0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">edge_0</span><span class="p">]</span>
+            <span class="n">p1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">edge_1</span><span class="p">]</span>
+
+            <span class="n">v01</span> <span class="o">=</span> <span class="n">p1</span><span class="o">-</span><span class="n">p0</span>
+            <span class="n">d01</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v01</span><span class="p">)</span>
+            <span class="n">u01</span> <span class="o">=</span> <span class="n">v01</span><span class="o">/</span><span class="n">d01</span>
+
+            <span class="n">outer_normal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edge_outer_normal</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_points</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">done</span><span class="p">[</span><span class="n">jj</span><span class="p">]:</span>
+                    <span class="n">point0</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">-</span><span class="n">p0</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">point0</span><span class="p">,</span> <span class="n">outer_normal</span><span class="p">)</span><span class="o">&gt;=</span><span class="mf">0.0</span><span class="p">:</span>
+                        <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">point0</span><span class="p">,</span> <span class="n">u01</span><span class="p">)</span><span class="o">/</span><span class="n">d01</span>
+                        <span class="k">if</span> <span class="n">f</span><span class="o">&gt;=</span><span class="mf">0.0</span> <span class="ow">and</span> <span class="n">f</span><span class="o">&lt;=</span><span class="mf">1.0</span><span class="p">:</span>
+                            <span class="n">done</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">=</span><span class="kc">True</span>
+                            <span class="n">properties</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">f</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">edge_0</span><span class="p">]</span><span class="o">+</span><span class="n">f</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">edge_1</span><span class="p">]</span>
+
+
+        <span class="c1">## Points in corners 2D</span>
+
+        <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_points</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">done</span><span class="p">[</span><span class="n">jj</span><span class="p">]:</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">neighbor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vertices_kdtree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="n">jj</span><span class="p">])</span>
+                <span class="n">properties</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">vertex</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]]</span>
+                <span class="n">done</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">=</span><span class="kc">True</span>
+
+
+        <span class="k">return</span> <span class="n">properties</span></div>
+
+
+</pre></div>
+
+           </div>
+          </div>
+    <a href="https://github.com/uibcdf/lindelint">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub">
+    </a>
+
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, UIBCDF Lab at the Mexico City Childrens Hospital Federico Gomez and authors.Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(false);
+      });
+  </script> 
+
+</body>
+</html>
