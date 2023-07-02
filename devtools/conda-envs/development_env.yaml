@@ -4,13 +4,12 @@ channels:
 - defaults
 dependencies:
 - python
-- setuptools
+- pip
+- setuptools >=61.0
+- versioningit ~=2.0
 - numpy
-- matplotlib
-- tqdm
 - scikit-learn
 - pytest
-- pip
 - pytest-cov
 - codecov
 - sphinx
@@ -19,6 +18,8 @@ dependencies:
 - sphinx-remove-toctrees
 - sphinx-copybutton
 - myst-nb
+- tqdm
+- matplotlib
 - jupyterlab
 - mamba
 - ipympl
